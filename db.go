@@ -16,7 +16,7 @@ type Database struct {
 }
 
 func NewDatabase(ds, cntr Datastorer) *Database {
-	trxn := NewTrxn()
+	trxn := NewTrxn(cntr, ds)
 	return &Database{
 		ds,
 		cntr,
@@ -25,7 +25,8 @@ func NewDatabase(ds, cntr Datastorer) *Database {
 }
 
 func (d Database) Run() {
-	fmt.Print("SET key value\n" +
+	fmt.Print("COMMANDS:\n\n" +
+		"SET key value\n" +
 		"GET key\n" +
 		"DELETE key\n" +
 		"COUNT value\n" +
@@ -53,13 +54,31 @@ func (d Database) Run() {
 	}
 }
 
+/*
+func (d Database) getCounter() Datastorer {
+	if(d.Transaction.HasTransaction()) {
+		return d.Counter
+		//return d.Transaction
+	}
+	return d.Counter
+}
+
+*/
+
+func (d Database) getStorage() Datastorer {
+	if d.Transaction.HasTransaction() {
+		return d.Transaction
+	}
+	return d.Datastore
+}
+
 // processCommand parses line into a command and parameters and
 // executes the command
-// Possible commands:
-// 	Set key value
-// 	Get key
-// 	Delete key
 func (d Database) decrementCount(value string) {
+	if d.Transaction.HasTransaction() {
+		// Ignore count within transaction for now
+		return
+	}
 	v, ok := d.Counter.Delete(value)
 	if ok == true {
 		count, err := strconv.Atoi(v)
@@ -73,6 +92,10 @@ func (d Database) decrementCount(value string) {
 	}
 }
 func (d Database) incrementCount(value string) {
+	if d.Transaction.HasTransaction() {
+		// Ignore count within transaction for now
+		return
+	}
 	v, ok := d.Counter.Set(value, "1")
 	if ok == false {
 		return
@@ -84,6 +107,7 @@ func (d Database) incrementCount(value string) {
 	d.Counter.Set(value, strconv.Itoa(count+1))
 }
 func (d Database) processCommand(line string) {
+	datastore := d.getStorage()
 	fields := strings.Fields(line)
 	command := fields[0]
 	switch command {
@@ -92,7 +116,7 @@ func (d Database) processCommand(line string) {
 			fmt.Println("Invalid argument count for 'GET'")
 			return
 		}
-		v, _ := d.Datastore.Get(fields[1])
+		v, _ := datastore.Get(fields[1])
 		fmt.Println(v)
 
 	case "SET":
@@ -100,7 +124,7 @@ func (d Database) processCommand(line string) {
 			fmt.Println("Invalid argument count for 'SET'")
 			return
 		}
-		v, ok := d.Datastore.Set(fields[1], fields[2])
+		v, ok := datastore.Set(fields[1], fields[2])
 
 		// setting to the same value, counter doesn't change
 		if ok == true && v == fields[2] {
@@ -119,7 +143,7 @@ func (d Database) processCommand(line string) {
 		if len(fields) != 2 {
 			fmt.Println("Invalid argument count for 'DELETE'")
 		}
-		v, ok := d.Datastore.Delete(fields[1])
+		v, ok := datastore.Delete(fields[1])
 		// nothing was removed
 		if ok == false {
 			return
@@ -139,9 +163,23 @@ func (d Database) processCommand(line string) {
 		}
 		fmt.Println(v)
 	case "BEGIN":
+		d.Transaction.Begin()
 	case "ROLLBACK":
+		d.Transaction.Rollback()
 	case "COMMIT":
-		fmt.Println("Not implemented")
+		transactions := d.Transaction.GetTrxn()
+		d.Transaction.Commit()
+		for i := 0; i < len(transactions); i++ {
+			trxn := transactions[i]
+			for y := 0; y < len(trxn); y++ {
+				values := strings.Split(trxn[y], " ")
+				if len(values) == 2 {
+					d.processCommand("SET " + " " + values[0] + " " + values[1])
+				} else {
+					d.processCommand("DELETE " + " " + values[0])
+				}
+			}
+		}
 	default:
 		fmt.Println("Invalid Command")
 	}
