@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 /*
 Commands:
 	- SET key value
@@ -15,5 +13,9 @@ Commands:
 
 */
 func main() {
-	fmt.Println("Hello World")
+	b := NewBTree()
+	c := NewBTree()
+	db := NewDatabase(b, c)
+	db.Run()
+
 }
