@@ -87,6 +87,3 @@ func (t *Trxn) Get(key string) (string, bool) {
 	return t.datastore.Get(key)
 }
 
-func printSlice(s []int) {
-	fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
-}
