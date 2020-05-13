@@ -24,18 +24,40 @@ func NewBTree() *BTree {
 	return &d
 }
 
-func hashKey(s string) uint64 {
-	h := fnv.New64()
+func hashKey(s string) uint32 {
+	h := fnv.New32()
 	h.Write([]byte(s))
-	return h.Sum64()
+	return h.Sum32()
 }
 
 func (b BTree) Get(key string) string {
-	return ""
+	node := NodeImpl{
+		Key: hashKey(key),
+	}
+	n := b.btree.Get(node)
+
+	// not found
+	if n == nil {
+		return "NULL"
+	}
+	out, ok := n.(Node)
+	if ok == false {
+		log.Fatal("tree item is not a Node")
+	}
+	return out.GetValue()
 }
 
 func (b BTree) Set(key, value string) {
+	node := NodeImpl{
+		Key:   hashKey(key),
+		Value: value,
+	}
+	b.btree.ReplaceOrInsert(node)
 }
 
 func (b BTree) Delete(key string) {
+	node := NodeImpl{
+		Key: hashKey(key),
+	}
+	b.btree.Delete(node)
 }

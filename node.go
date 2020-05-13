@@ -9,6 +9,7 @@ import (
 type Node interface {
 	Less(than bt.Item) bool
 	GetKey() uint32
+	GetValue() string
 }
 
 type NodeImpl struct {
@@ -18,6 +19,10 @@ type NodeImpl struct {
 
 func (n NodeImpl) GetKey() uint32 {
 	return n.Key
+}
+
+func (n NodeImpl) GetValue() string {
+	return n.Value
 }
 
 func (n NodeImpl) Less(than bt.Item) bool {
