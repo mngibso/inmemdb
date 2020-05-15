@@ -55,6 +55,7 @@ func (t *Trxn) Delete(key string) (string, bool) {
 	}
 	trxn := t.Transactions[len(t.Transactions)-1]
 	trxn = append(trxn, key)
+	t.Transactions[len(t.Transactions)-1] = trxn
 	return "", false
 }
 
