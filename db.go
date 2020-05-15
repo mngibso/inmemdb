@@ -16,7 +16,7 @@ type Database struct {
 }
 
 func NewDatabase(ds, cntr Datastorer) *Database {
-	trxn := NewTrxn(cntr, ds)
+	trxn := NewTrxn(ds, cntr)
 	return &Database{
 		ds,
 		cntr,
@@ -54,17 +54,6 @@ func (d Database) Run() {
 	}
 }
 
-/*
-func (d Database) getCounter() Datastorer {
-	if(d.Transaction.HasTransaction()) {
-		return d.Counter
-		//return d.Transaction
-	}
-	return d.Counter
-}
-
-*/
-
 func (d Database) getStorage() Datastorer {
 	if d.Transaction.HasTransaction() {
 		return d.Transaction
@@ -75,10 +64,6 @@ func (d Database) getStorage() Datastorer {
 // processCommand parses line into a command and parameters and
 // executes the command
 func (d Database) decrementCount(value string) {
-	if d.Transaction.HasTransaction() {
-		// Ignore count within transaction for now
-		return
-	}
 	v, ok := d.Counter.Delete(value)
 	if ok == true {
 		count, err := strconv.Atoi(v)
@@ -92,10 +77,6 @@ func (d Database) decrementCount(value string) {
 	}
 }
 func (d Database) incrementCount(value string) {
-	if d.Transaction.HasTransaction() {
-		// Ignore count within transaction for now
-		return
-	}
 	v, ok := d.Counter.Set(value, "1")
 	if ok == false {
 		return
@@ -127,7 +108,7 @@ func (d Database) processCommand(line string) {
 		v, ok := datastore.Set(fields[1], fields[2])
 
 		// setting to the same value, counter doesn't change
-		if ok == true && v == fields[2] {
+		if (ok == true && v == fields[2]) || d.Transaction.HasTransaction() {
 			return
 		}
 
@@ -156,8 +137,12 @@ func (d Database) processCommand(line string) {
 			fmt.Println("Invalid argument count for 'COUNT'")
 			return
 		}
+		if d.Transaction.HasTransaction() {
+			v, _ := d.Transaction.Count(fields[1])
+			fmt.Println(v)
+			return
+		}
 		v, ok := d.Counter.Get(fields[1])
-
 		if ok == false {
 			v = "0"
 		}
@@ -168,7 +153,7 @@ func (d Database) processCommand(line string) {
 		d.Transaction.Rollback()
 	case "COMMIT":
 		transactions := d.Transaction.GetTrxn()
-		d.Transaction.Commit()
+		d.Transaction.Clear()
 		for i := 0; i < len(transactions); i++ {
 			trxn := transactions[i]
 			for y := 0; y < len(trxn); y++ {
