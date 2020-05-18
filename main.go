@@ -1,21 +1,9 @@
 package main
 
-/*
-Commands:
-	- SET key value
-	- GET key
-	- DELETE key
-	- COUNT key
-	- END
-	- BEGIN
-	- ROLLBACK
-	- COMMIT
-
-*/
+// set up the in memory database and run
 func main() {
 	b := NewBTree()
 	c := NewBTree()
 	db := NewDatabase(b, c)
 	db.Run()
-
 }

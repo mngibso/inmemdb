@@ -15,6 +15,7 @@ type Database struct {
 	Transaction *Trxn
 }
 
+// NewDatabase returns a pointer to a database.
 func NewDatabase(ds, cntr Datastorer) *Database {
 	trxn := NewTrxn(ds, cntr)
 	return &Database{
@@ -24,6 +25,7 @@ func NewDatabase(ds, cntr Datastorer) *Database {
 	}
 }
 
+// Run prompts the user for a command and runs the command
 func (d Database) Run() {
 	fmt.Print("COMMANDS:\n\n" +
 		"SET key value\n" +
@@ -44,6 +46,7 @@ func (d Database) Run() {
 			fmt.Println("Error reading from input: ", err)
 		}
 
+		// END stops exection
 		if t == "END" {
 			break
 		}
@@ -54,6 +57,7 @@ func (d Database) Run() {
 	}
 }
 
+// getStorage returns the current datastore ( a transaction or the database store )
 func (d Database) getStorage() Datastorer {
 	if d.Transaction.HasTransaction() {
 		return d.Transaction
@@ -61,8 +65,7 @@ func (d Database) getStorage() Datastorer {
 	return d.Datastore
 }
 
-// processCommand parses line into a command and parameters and
-// executes the command
+// decrementCount decrements the number of times `value` is set in the database
 func (d Database) decrementCount(value string) {
 	v, ok := d.Counter.Delete(value)
 	if ok == true {
@@ -76,6 +79,8 @@ func (d Database) decrementCount(value string) {
 		d.Counter.Set(value, strconv.Itoa(count-1))
 	}
 }
+
+// incrementCount increments the number of times `value` is set in the database
 func (d Database) incrementCount(value string) {
 	v, ok := d.Counter.Set(value, "1")
 	if ok == false {
@@ -87,6 +92,8 @@ func (d Database) incrementCount(value string) {
 	}
 	d.Counter.Set(value, strconv.Itoa(count+1))
 }
+
+// processCommand performs the action requested by the command in `line`
 func (d Database) processCommand(line string) {
 	datastore := d.getStorage()
 	fields := strings.Fields(line)
@@ -107,14 +114,15 @@ func (d Database) processCommand(line string) {
 		}
 		v, ok := datastore.Set(fields[1], fields[2])
 
-		// setting to the same value, counter doesn't change
+		// Setting to the same value, counter doesn't change.
+		// Don't change the counter if we're in a transaction.
 		if (ok == true && v == fields[2]) || d.Transaction.HasTransaction() {
 			return
 		}
 
 		if ok == true {
 			// value is being replaced
-			// decrement counter for old value
+			// decrement counter for the old value
 			d.decrementCount(v)
 		}
 		// increment counter for inserted value
@@ -137,6 +145,8 @@ func (d Database) processCommand(line string) {
 			fmt.Println("Invalid argument count for 'COUNT'")
 			return
 		}
+
+		// If we're currently in a transaction, get the count from the transaction.
 		if d.Transaction.HasTransaction() {
 			v, _ := d.Transaction.Count(fields[1])
 			fmt.Println(v)
@@ -152,6 +162,7 @@ func (d Database) processCommand(line string) {
 	case "ROLLBACK":
 		d.Transaction.Rollback()
 	case "COMMIT":
+		// loop through all the transactions in order and perform the action
 		transactions := d.Transaction.GetTrxn()
 		d.Transaction.Clear()
 		for i := 0; i < len(transactions); i++ {
