@@ -6,6 +6,18 @@ import (
 	"strings"
 )
 
+type Transactioner interface {
+	Clear()
+	Begin()
+	HasTransaction() bool
+	GetTrxn() [][]string
+	Rollback()
+	Get(string) (string, bool)
+	Set(string, string) (string, bool)
+	Delete(string) (string, bool)
+	Count(value string) (string, bool)
+}
+
 // A Trxn stores multiple transactions and implements the Datastorer interface. Transactions may be embedded
 // within each other.
 // Trxn must store the key/values as well as keep a running count of each value in the Datastorer.

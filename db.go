@@ -9,10 +9,14 @@ import (
 	"strings"
 )
 
+type Runner interface {
+	Run()
+}
+
 type Database struct {
 	Datastore   Datastorer
 	Counter     Datastorer
-	Transaction *Trxn
+	Transaction Transactioner
 }
 
 // NewDatabase returns a pointer to a database.
