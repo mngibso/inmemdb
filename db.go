@@ -40,7 +40,8 @@ func (d Database) Run() {
 		"BEGIN\n" +
 		"ROLLBACK\n" +
 		"COMMIT\n")
-	fmt.Println("---------------------------\n")
+	fmt.Println("---------------------------")
+	fmt.Println("")
 	scanner := bufio.NewScanner(os.Stdin)
 	var t string
 	for {
