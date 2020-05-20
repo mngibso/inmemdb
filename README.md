@@ -16,6 +16,10 @@ Install and set up your go environment.
 
 `$ go get github.com/mngibso/inmemdb`
 
+### Run tests
+
+`$ go test -v`
+
 ### Start inmemdb
 
 ```
