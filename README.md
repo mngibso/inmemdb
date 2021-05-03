@@ -6,6 +6,8 @@ In memory key/value database.  This project was created as part of challenge
 to provide an in memory key/value store with O(log n) read and write performance. 
 It supports embedded transactions. Interface is through the console.
 
+An additional feature is allowing a COUNT command that will return the number of times any given value is stored in the tree.
+
 ## Setup and run
 ### Prerequisites
 - [Go](https://golang.org/dl/)
